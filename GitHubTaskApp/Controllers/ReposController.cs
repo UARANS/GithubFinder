@@ -4,9 +4,10 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using GitHubTaskApp.Models;
 using System.Globalization;
+using GitHubTaskApp.Services;
+using Microsoft.AspNetCore.Routing;
 
 namespace GitHubTaskApp.Controllers
 {
@@ -14,59 +15,34 @@ namespace GitHubTaskApp.Controllers
     [ApiController]
     public class ReposController : ControllerBase
     {
-        private readonly ApplicationContext _context;
+        private readonly IRepository<Repo, RepoSearch> _db;
 
-        public ReposController(ApplicationContext context)
+        public ReposController(IRepository<Repo, RepoSearch> db)
         {
-            _context = context;
-        }
-
-        [HttpGet]
-        public async Task<ActionResult<List<Repo>>> GetRepos(string name, string guid)
-        {
-            if(string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(guid))
-            {
-                return BadRequest();
-            }
-
-            Guid uuid = new Guid(guid.Replace("\"", ""));
-
-            var repos = await _context.Repos
-                .Include(repo => repo.Owner)
-                .Where(repo => repo.Name.Contains(name) && repo.Uuid == uuid)
-                .OrderByDescending(repo => repo.Created)
-                .ThenByDescending(repo => repo.Updated_at)
-                .Take(10)
-                .ToListAsync();
-
-            if (repos.Count <= 0)
-            {
-                return NotFound();
-            }
-
-            return repos;
+            _db = db;
         }
 
         [HttpPost]
-        public async Task<ActionResult> PostRepos(List<Repo> repos)
+        [Route("create")]
+        public async Task<IActionResult> Create(List<Repo> repos)
         {
-            if(!ModelState.IsValid)
-            {
-                return BadRequest();
-            }
-
-            DateTime now = DateTime.Now;
             Guid guid = Guid.NewGuid();
 
-            foreach (Repo repo in repos)
-            {
-                repo.Created = now;
-                repo.Uuid = guid;
-            }
+            repos.ForEach(repo => repo.Uuid = guid);
 
-            _context.Repos.AddRange(repos);
-            await _context.SaveChangesAsync();
-            return Ok(guid);
+            await _db.AddRangeAsync(repos);
+            await _db.SaveAsync();
+
+            return Content(guid.ToString());
+        }
+
+        [HttpPost]
+        [Route("search")]
+        public async Task<IActionResult> Search(RepoSearch key)
+        {
+            IEnumerable<Repo> repos = await _db.SearchAsync(key);
+
+            return new JsonResult(repos);
         }
     }
 }

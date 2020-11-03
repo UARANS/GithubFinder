@@ -1,83 +1,100 @@
 import Vue from 'vue'
 import Vuex from 'vuex'
 
-import store from '@/store'
+import axios from 'axios'
 
 Vue.use(Vuex)
 
 export default new Vuex.Store({
-  state: {
-    name: '',
-    repos: []
-  },
-  getters: {
-    getName(state) {
-      return state.name
+    state: {
+        name: localStorage.getItem("name"),
+        guid: '',
+        repos: [],
+        message: '',
+        per_page: 10,
+        client_id: process.env.VUE_APP_CLIENT_ID,
+        client_secret: process.env.VUE_APP_CLIENT_SECRET
     },
-    getRepos(state) {
-      return state.repos
+    mutations: {
+        UPDATE_NAME(state, payload) {
+            localStorage.setItem("name", payload)
+            state.name = payload
+        },
+        SET_GUID(state, payload) {            
+            state.guid = payload
+        },
+        SET_REPOS(state, payload) {
+            state.repos = payload
+        },
+        SET_MESSAGE(state, payload) {
+            state.message = payload
+        },
     },
-  },
-  mutations: {
-    updateName(state, value) {
-      localStorage.setItem("name", value)
-      state.name = value
-    },
-    setRepos(state, value) {
-      state.repos = value
-    },
-  },
-  actions: {
-    async getGithubApiRepos(context){
-      $.ajax({
-        url: 'https://api.github.com/search/repositories',
-        dataType: 'json',
-        data: {
-          client_id: 'd6be03f5aad7cdfaeb6e',
-          client_secret: '34352aef3b7db05016fae2b83ace417a553f586c',
-          q: context.getters.getName,
-          sort: 'updated',
-          per_page: 10
+    actions: {
+        async getGithubRepos({ dispatch, commit, state }) {            
+            try {
+                const response = await axios.get("https://api.github.com/search/repositories", {
+                    params: {
+                        client_id: state.client_id,
+                        client_secret: state.client_secret,
+                        q: state.name,
+                        sort: 'updated',
+                        per_page: state.per_page
+                    }
+                })
+
+                commit('SET_REPOS', response.data.items)
+
+                if (response.data.items.length) {
+                    commit('SET_MESSAGE', '')
+                    dispatch('createDBRepos')
+                } else {
+                    commit('SET_MESSAGE', 'NOT FOUND')
+                }
+            } catch (error) {
+                console.error(error.message)
+            }          
+        },
+        async createDBRepos({ commit, state }) {
+            try {
+                const response = await axios({
+                    url: "/api/repos/create",
+                    method: "post",
+                    headers: { "content-type": "application/json" },
+                    data: JSON.stringify(state.repos)
+                })
+                commit('SET_GUID', response.data)
+                localStorage.setItem("uuid", response.data)
+            } catch (error) {
+                console.error(error.message)
+            }
+        },
+        async searchDBRepos({ commit }, key) {
+            try {
+                const response = await axios({
+                    url: "/api/repos/search",
+                    method: 'post',
+                    headers: { "content-type": "application/json" },
+                    data: JSON.stringify({
+                        "name": key.name,
+                        "uuid": key.guid
+                    })                   
+                })
+
+                if (!response.data.length) {
+                    commit('SET_MESSAGE', 'NOT FOUND')
+                } else {
+                    commit('SET_MESSAGE', '')
+                }
+
+                commit('SET_REPOS', response.data)
+
+            } catch (error) {
+                console.error(error.message)
+            }
         }
-      }).done(function (repos) {
-        context.commit('setRepos', repos.items);
-        store.dispatch('createDBRepos');
-      });
     },
-    async searchDBRepos(context) {  
+    modules: {
 
-      let guid = localStorage.getItem("uuid");
-
-      if(!guid){
-          return;
-      }          
-
-      $.ajax({
-          url: 'api/repos',
-          dataType: 'json',
-          data: {
-            "name": context.getters.getName,
-            "guid": guid
-          }
-      }).done(function (repos) {
-          context.commit('setRepos', repos)
-      });
-    },    
-    async createDBRepos(context){
-      let repos = context.getters.getRepos;
-
-      const response = await fetch("api/repos", {
-        method: "POST",
-        headers: { "Accept": "application/json", "Content-Type": "application/json" },
-        body: JSON.stringify(repos)
-      });
-      if (response.ok === true) {
-          let guid = await response.text();
-          localStorage.setItem("uuid", guid)
-      }
-      
     }
-  },
-  modules: {
-  }
 })

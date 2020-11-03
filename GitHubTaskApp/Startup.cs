@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using GitHubTaskApp.Models;
-using GitHubTaskApp.VueCoreConnection;
+using GitHubTaskApp.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
@@ -31,8 +31,9 @@ namespace GitHubTaskApp
             string connection = Configuration.GetConnectionString("DefaultConnection");
 
             services.AddDbContext<ApplicationContext>(options => options.UseSqlServer(connection));
-            services.AddSpaStaticFiles(options => { options.RootPath = "ClientApp/dist"; });
+            services.AddSpaStaticFiles(options => { options.RootPath = "wwwroot"; });
             services.AddControllers();
+            services.AddTransient<IRepository<Repo, RepoSearch>, SQLGithubRepository>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -57,10 +58,9 @@ namespace GitHubTaskApp
             app.UseSpaStaticFiles();
             app.UseSpa(builder =>
             {
-                builder.Options.SourcePath = "ClientApp";
                 if (env.IsDevelopment())
                 {
-                    builder.UseVueDevelopmentServer();
+                    builder.UseProxyToSpaDevelopmentServer("http://localhost:8080");
                 }
             });
         }
