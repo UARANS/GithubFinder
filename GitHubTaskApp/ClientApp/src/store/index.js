@@ -52,7 +52,7 @@ export default new Vuex.Store({
                     commit('SET_MESSAGE', 'NOT FOUND')
                 }
             } catch (error) {
-                console.error(error.message)
+                commit('SET_MESSAGE', 'Error occured. Try again.')
             }          
         },
         async createDBRepos({ commit, state }) {
@@ -66,7 +66,7 @@ export default new Vuex.Store({
                 commit('SET_GUID', response.data)
                 localStorage.setItem("uuid", response.data)
             } catch (error) {
-                console.error(error.message)
+                commit('SET_MESSAGE', 'Error occured. Try again.')
             }
         },
         async searchDBRepos({ commit }, key) {
@@ -90,7 +90,7 @@ export default new Vuex.Store({
                 commit('SET_REPOS', response.data)
 
             } catch (error) {
-                console.error(error.message)
+                commit('SET_MESSAGE', 'Error occured. Try again.')
             }
         }
     },
