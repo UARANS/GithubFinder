@@ -4,22 +4,22 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using GitHubTaskApp.Models;
 using System.Globalization;
-using GitHubTaskApp.Services;
 using Microsoft.AspNetCore.Routing;
+using DataAccess.EFCore.Interfaces;
+using DataAccess.EFCore.Models;
 
-namespace GitHubTaskApp.Controllers
+namespace GitHubRepos.WebApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
     public class ReposController : ControllerBase
     {
-        private readonly IRepository<Repo, RepoSearch> _db;
+        private readonly IUnitOfWork _unitOfWork;
 
-        public ReposController(IRepository<Repo, RepoSearch> db)
+        public ReposController(IUnitOfWork unitOfWork)
         {
-            _db = db;
+            _unitOfWork = unitOfWork;
         }
 
         [HttpPost]
@@ -30,8 +30,8 @@ namespace GitHubTaskApp.Controllers
 
             repos.ForEach(repo => repo.Uuid = guid);
 
-            await _db.AddRangeAsync(repos);
-            await _db.SaveAsync();
+            await _unitOfWork.Repos.AddRange(repos);
+            await _unitOfWork.Complete();
 
             return Content(guid.ToString());
         }
@@ -40,8 +40,7 @@ namespace GitHubTaskApp.Controllers
         [Route("search")]
         public async Task<IActionResult> Search(RepoSearch key)
         {
-            IEnumerable<Repo> repos = await _db.SearchAsync(key);
-
+            IEnumerable<Repo> repos = await _unitOfWork.Repos.GetLatestRepos(key);
             return new JsonResult(repos);
         }
     }

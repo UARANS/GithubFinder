@@ -2,8 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using GitHubTaskApp.Models;
-using GitHubTaskApp.Services;
+using DataAccess.EFCore;
+using DataAccess.EFCore.Interfaces;
+using DataAccess.EFCore.Repositories;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
@@ -14,7 +15,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-namespace GitHubTaskApp
+namespace GitHubRepos.WebApi
 {
     public class Startup
     {
@@ -30,10 +31,12 @@ namespace GitHubTaskApp
         {
             string connection = Configuration.GetConnectionString("DefaultConnection");
 
-            services.AddDbContext<ApplicationContext>(options => options.UseSqlServer(connection));
+            services.AddDbContext<PlutoContext>(options => options.UseSqlServer(connection));
             services.AddSpaStaticFiles(options => { options.RootPath = "wwwroot"; });
             services.AddControllers();
-            services.AddTransient<IRepository<Repo, RepoSearch>, SQLGithubRepository>();
+            services.AddTransient(typeof(IRepository<>), typeof(Repository<>));
+            services.AddTransient<IGithubRepository, GithubRepository>();
+            services.AddTransient<IUnitOfWork, UnitOfWork>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Threading.Tasks;
+using System.Text;
 
-namespace GitHubTaskApp.Models
+namespace DataAccess.EFCore.Models
 {
     public class RepoSearch
     {
@@ -13,7 +12,5 @@ namespace GitHubTaskApp.Models
 
         [Required]
         public Guid? Uuid { get; set; }
-
-        public int Top { get; set; } = 10;
     }
 }

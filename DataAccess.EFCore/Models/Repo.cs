@@ -1,19 +1,20 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
 using System.Text.Json.Serialization;
-using Newtonsoft.Json;
 
-namespace GitHubTaskApp.Models
+namespace DataAccess.EFCore.Models
 {
     public class Repo
     {
         public int RepoId { get; set; }
 
         [Required]
-        public string Name { get; set; }
+        [StringLength(200)]
+        public string Name { get; set; }        
+
         public string Description { get; set; }
+
+        [StringLength(100)]
         public string Language { get; set; }
 
         [Required]
@@ -27,20 +28,14 @@ namespace GitHubTaskApp.Models
         public int StargazersCount { get; set; }
 
         [JsonPropertyName("html_url")]
+        [StringLength(2000)]
         public string HtmlUrl { get; set; }
-        public RepoOwner Owner { get; set; }
-        public Guid Uuid { get; set; }
-        public DateTime Created { get; set; } = DateTime.Now;
-    }
-    public class RepoOwner
-    {
-        [Key]
-        public int OwnerId { get; set; }
 
         [Required]
-        public string Login { get; set; }
+        public RepoOwner Owner { get; set; }
 
-        [JsonPropertyName("avatar_url")]
-        public string AvatarUrl { get; set; }
+        public Guid Uuid { get; set; }
+
+        public DateTime Created { get; set; } = DateTime.Now;
     }
 }

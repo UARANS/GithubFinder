@@ -1,20 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using System.Text;
 using Microsoft.EntityFrameworkCore;
+using DataAccess.EFCore.Models;
 
-namespace GitHubTaskApp.Models
+namespace DataAccess.EFCore
 {
-    public class ApplicationContext : DbContext
+    public class PlutoContext : DbContext
     {
-        public ApplicationContext(DbContextOptions<ApplicationContext> options)
+        public PlutoContext(DbContextOptions<PlutoContext> options)
             : base(options)
         {
-            Database.EnsureCreated();
         }
 
         public DbSet<Repo> Repos { get; set; }
         public DbSet<RepoOwner> RepoOwners { get; set; }
     }
+
 }
